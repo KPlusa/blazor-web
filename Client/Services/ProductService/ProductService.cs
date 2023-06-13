@@ -1,32 +1,56 @@
 ﻿using BlazorWeb.Shared;
+using Microsoft.AspNetCore.Components;
+using System.Net.Http.Json;
+using System.Net;
 
 namespace BlazorWeb.Client.Services.ProductService
 {
     public class ProductService : IProductService
     {
-        public Task<List<Product>> GetProducts()
+        private readonly HttpClient _http;
+        private readonly NavigationManager _navigationManger;
+
+        public ProductService(HttpClient http, NavigationManager navigationManger)
         {
-            throw new NotImplementedException();
+            _http = http;
+            _navigationManger = navigationManger;
         }
 
-        public Task<Product?> GetProductById(int productId)
+        public List<Product> Products { get; set; } = new List<Product>();
+
+        public async Task CreateProduct(Product product)
         {
-            throw new NotImplementedException();
+            await _http.PostAsJsonAsync("api/product", product);
+            _navigationManger.NavigateTo("products");
         }
 
-        public Task<Product> CreateProduct(Product product)
+        public async Task DeleteProduct(int id)
         {
-            throw new NotImplementedException();
+            var result = await _http.DeleteAsync($"api/product/{id}");
+            _navigationManger.NavigateTo("products");
         }
 
-        public Task<Product?> UpdateProduct(int productId, Product product)
+        public async Task<Product?> GetProductById(int id)
         {
-            throw new NotImplementedException();
+            var result = await _http.GetAsync($"api/product/{id}");
+            if (result.StatusCode == HttpStatusCode.OK)
+            {
+                return await result.Content.ReadFromJsonAsync<Product>();
+            }
+            return null;
         }
 
-        public Task<bool> DeleteProduct(int productId)
+        public async Task GetProducts()
         {
-            throw new NotImplementedException();
+            var result = await _http.GetFromJsonAsync<List<Product>>("api/product");
+            if (result is not null)
+                Products = result;
+        }
+
+        public async Task UpdateProduct(int id, Product product)
+        {
+            await _http.PutAsJsonAsync($"api/product/{id}", product);
+            _navigationManger.NavigateTo("products");
         }
     }
 }
