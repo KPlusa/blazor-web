@@ -1,0 +1,80 @@
+﻿@page "/product"
+@page "/product/{id:int}"
+@inject IClientProductService ClientProductService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveAuto
+
+@if (Id is null)
+{
+    <PageTitle>Create a new Product</PageTitle>
+    <h3>Create a new Product</h3>
+}
+else
+{
+    <PageTitle>Edit @_product.Title</PageTitle>
+    <h3>Edit @_product.Title</h3>
+}
+
+<EditForm Model="_product" OnSubmit="HandleSubmit">
+    <div>
+        <label for="title">Title</label>
+        <InputText id="title" @bind-Value="_product.Title" class="form-control" />
+    </div>
+    <div>
+        <label for="category">Category</label>
+        <InputText id="category" @bind-Value="_product.Category" class="form-control" />
+    </div>
+    <div>
+        <label for="price">Price</label>
+        <InputNumber id="price" @bind-Value="_product.Price" class="form-control" />
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">@_buttonText</button>
+    <button type="button" class="btn btn-danger"
+            @onclick="DeleteProduct">
+        Delete Product
+    </button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    string _buttonText = string.Empty;
+
+    BlazorWeb.Shared.Product _product = new() { Title = "New Product" };
+
+    protected override void OnInitialized()
+    {
+        _buttonText = Id == null ? "Save New Product" : "Update Product";
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is not null)
+        {
+            var result = await ClientProductService.GetProductById((int)Id);
+            if (result is not null)
+                _product = result;
+            else
+                NavigationManager.NavigateTo("/product");
+        }
+    }
+
+    async Task HandleSubmit()
+    {
+        if (Id is null)
+        {
+            await ClientProductService.CreateProduct(_product);
+        }
+        else
+        {
+            await ClientProductService.UpdateProduct((int)Id, _product);
+        }
+    }
+
+    async Task DeleteProduct()
+    {
+        await ClientProductService.DeleteProduct(_product.Id);
+    }
+}
